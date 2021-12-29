@@ -1,0 +1,21 @@
+FROM golang:1.16-alpine AS builder
+ENV CGO_ENABLED=0
+ENV GOPRIVATE=""
+ENV GOPROXY="https://goproxy.cn,direct"
+ENV GOSUMDB="sum.golang.google.cn"
+WORKDIR /root/webproxy/
+
+ADD . .
+RUN go mod download \
+    && go test --cover $(go list ./... | grep -v /vendor/) \
+    && go build -o main cmd/client/main.go
+
+FROM alpine
+ENV TZ Asia/Shanghai
+WORKDIR /root/
+
+COPY --from=builder /root/webproxy/main webproxyc
+RUN chmod +x webproxyc
+
+ENTRYPOINT ["/root/webproxyc"]
+CMD [./client -l localhost:80 -r localhost:8009 -pwd password]
