@@ -1,39 +1,26 @@
-package main
+package link
 
 import (
-	"flag"
+	"github.com/gg-tools/portmap/util"
 	"log"
 	"net"
 	"time"
-
-	"github.com/gg-tools/portmap/util"
 )
 
-var (
-	local  = flag.String("l", "192.168.31.44:22", "Address of the local app service")
-	remote = flag.String("r", "127.0.0.1:8010", "Address of the portmap server")
-	pwd    = flag.String("pwd", "jjg", "password to access server")
-)
-
-func main() {
-	flag.Usage = util.Usage
-	flag.Parse()
-
-	log.Println("portmap client starting: ", *local, "->", *remote)
-	for {
-		connectServer()
-		time.Sleep(10 * time.Second) //retry after 10s
-	}
+type Client struct {
+	remote string
+	local  string
+	pwd    string
 }
 
-func connectServer() {
-	proxy, err := net.DialTimeout("tcp", *remote, 5*time.Second)
+func (c *Client) Connect() {
+	proxy, err := net.DialTimeout("tcp", c.remote, 5*time.Second)
 	if err != nil {
-		log.Println("CAN'T CONNECT:", *remote, " err:", err)
+		log.Println("CAN'T CONNECT:", c.remote, " err:", err)
 		return
 	}
 	defer proxy.Close()
-	util.WriteString(proxy, *pwd+"\n"+util.C2PConnect)
+	util.WriteString(proxy, c.pwd+"\n"+util.C2PConnect)
 
 	for {
 		proxy.SetReadDeadline(time.Now().Add(2 * time.Second))
@@ -41,7 +28,7 @@ func connectServer() {
 		//	proxy.SetReadDeadline(time.Time{})
 		if err == nil {
 			if msg == util.P2CNewSession {
-				go session()
+				go c.session()
 			} else {
 				log.Println(msg)
 			}
@@ -63,22 +50,21 @@ func connectServer() {
 		}
 		//time.Sleep(2*time.Second)
 	}
-
 }
 
 //客户端单次连接处理
-func session() {
+func (c *Client) session() {
 	log.Println("Create Session")
-	rp, err := net.Dial("tcp", *remote)
+	rp, err := net.Dial("tcp", c.remote)
 	if err != nil {
-		log.Println("Can't' connect:", *remote, " err:", err)
+		log.Println("Can't' connect:", c.remote, " err:", err)
 		return
 	}
 	//defer util.CloseConn(rp)
-	util.WriteString(rp, *pwd+"\n"+util.C2PSession)
-	lp, err := net.Dial("tcp", *local)
+	util.WriteString(rp, c.pwd+"\n"+util.C2PSession)
+	lp, err := net.Dial("tcp", c.local)
 	if err != nil {
-		log.Println("Can't' connect:", *local, " err:", err)
+		log.Println("Can't' connect:", c.local, " err:", err)
 		rp.Close()
 		return
 	}

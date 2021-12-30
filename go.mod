@@ -1,3 +1,7 @@
-module github.com/gg-tools/tcpproxy
+module github.com/gg-tools/portmap
 
 go 1.16
+
+require (
+	github.com/spf13/cobra v1.3.0
+)

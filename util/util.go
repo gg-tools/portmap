@@ -12,12 +12,12 @@ import (
 
 //TOKEN
 const (
-	TOKEN_LEN       = 4
-	C2P_CONNECT     = "C2P0"
-	C2P_SESSION     = "C2P1"
-	C2P_KEEP_ALIVE  = "C2P2"
-	P2C_NEW_SESSION = "P2C1"
-	SEPS            = "\n"
+	TokenLen      = 4
+	C2PConnect    = "C2P0"
+	C2PSession    = "C2P1"
+	C2PKeepAlive  = "C2P2"
+	P2CNewSession = "P2C1"
+	SEPS          = "\n"
 )
 
 func Usage() {
@@ -51,7 +51,7 @@ func WriteString(w io.Writer, str string) (int, error) {
 	return w.Write([]byte(str))
 }
 
-const MAX_STRING = 10240
+const MasString = 10240
 
 func ReadString(r io.Reader) (string, error) {
 	var size int32
@@ -59,7 +59,7 @@ func ReadString(r io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if size > MAX_STRING {
+	if size > MasString {
 		return "", errors.New("too long string")
 	}
 

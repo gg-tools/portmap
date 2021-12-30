@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gg-tools/tcpproxy/util"
+	"github.com/gg-tools/portmap/util"
 )
 
 var (
-	_port     = flag.String("p", "8010", "The Listen port of golocproxy, golocproxy client will access the port.")
-	_userport = flag.String("up", "8020", "The Listen port of user connect.")
-	_pwd      = flag.String("pwd", "jjg", "Password to valid Client Proxy")
+	port     = flag.String("p", "8010", "The Listen port of portmap, portmap client will access the port.")
+	userPort = flag.String("up", "8020", "The Listen port of user connect.")
+	pwd      = flag.String("pwd", "jjg", "Password to valid Client Proxy")
 )
 
 type OnConnectFunc func(net.Conn, chan net.Conn)
@@ -24,10 +24,10 @@ func main() {
 	//flag.Usage()
 
 	chSession := make(chan net.Conn, 100)
-	if nil != listen(*_port, chSession, onClientConnect) {
+	if nil != listen(*port, chSession, onClientConnect) {
 		return
 	}
-	if nil != listen(*_userport, chSession, onUserConnect) {
+	if nil != listen(*userPort, chSession, onUserConnect) {
 		return
 	}
 	time.Sleep(999999 * time.Hour)
@@ -68,18 +68,18 @@ func onClientConnect(conn net.Conn, chSession chan net.Conn) {
 		return
 	}
 	msgs := strings.Split(msg, "\n")
-	pwd := msgs[0]
-	if *_pwd != pwd {
+	p := msgs[0]
+	if *pwd != p {
 		util.CloseConn(conn)
 		return
 	}
 	token := msgs[1]
 	//log.Println("token=", token)
-	if token == util.C2P_CONNECT {
+	if token == util.C2PConnect {
 		//内网服务器启动时连接代理，建立长连接
 		clientConnect(conn)
 		return
-	} else if token == util.C2P_SESSION {
+	} else if token == util.C2PSession {
 		//为客户端的单次连接请求建立一个临时的"内网服务器<->代理"的连接
 		initUserSession(conn, chSession)
 		return
@@ -90,7 +90,7 @@ func onClientConnect(conn net.Conn, chSession chan net.Conn) {
 //代理客户端连接
 var _clientProxy net.Conn = nil
 
-//处理golocproxy client的连接
+//处理portmap client的连接
 func clientConnect(conn net.Conn) {
 	defer util.CloseConn(conn) // conn.Close()
 	if _clientProxy != nil {
@@ -123,7 +123,7 @@ func onUserConnect(conn net.Conn, chSession chan net.Conn) {
 		util.CloseConn(conn)
 		return
 	}
-	_, err := util.WriteString(_clientProxy, util.P2C_NEW_SESSION)
+	_, err := util.WriteString(_clientProxy, util.P2CNewSession)
 	if err != nil {
 		conn.Write([]byte("SERVICE FAIL"))
 		util.CloseConn(conn)
